@@ -899,15 +899,11 @@
             
             // Update Step 1 based on yeast type
             if (yeastType === 'commercial') {
-                safeUpdate('step1-title', 'Prepare the Yeast Mixture');
-                safeUpdate('leavening-step', Math.round(baseAmounts.yeast * currentScale) + 'g of instant yeast');
-                safeUpdate('step1-line2', 'Whisk these ingredients together until well dissolved. Let sit for about 5 minutes until bubbles form.');
+                safeUpdate('yeast-step', Math.round(baseAmounts.yeast * currentScale) + 'g');
                 safeUpdate('flour-step', Math.round(baseAmounts.flour * currentScale) + 'g');
             } else {
                 const sourdoughAmounts = calculateSourdoughAmounts();
-                safeUpdate('step1-title', 'Prepare the Starter Mixture');
-                safeUpdate('leavening-step', sourdoughAmounts.starter + 'g of active sourdough starter');
-                safeUpdate('step1-line2', 'Add the active sourdough starter and whisk well. Let sit for 10-15 minutes for starter to activate. (Ensure starter is active and passes the float test first)');
+                safeUpdate('yeast-step', sourdoughAmounts.starter + 'g');
                 safeUpdate('flour-step', sourdoughAmounts.flour + 'g');
             }
             
@@ -952,38 +948,21 @@
                 const tipExtra = document.getElementById('tip-extra');
                 if (tipExtra) tipExtra.style.display = 'list-item';
             }
-        }
             
-            // Update yield and pan size
-            if (currentScale === 0.5) {
-                document.getElementById('yield').textContent = "4-5 pieces";
-                document.getElementById('panSize').textContent = "8x8 inch (20x20 cm)";
-                document.getElementById('equipmentPan').textContent = "(8x8 inch / 20x20 cm)";
-                document.getElementById('pan-step').textContent = "8x8 inch (20x20 cm)";
-            } else if (currentScale === 2) {
-                document.getElementById('yield').textContent = "16-20 pieces";
-                document.getElementById('panSize').textContent = "Two 9x13 inch (23x33 cm) pans";
-                document.getElementById('equipmentPan').textContent = "(Two 9x13 inch / 23x33 cm pans)";
-                document.getElementById('pan-step').textContent = "two 9x13 inch (23x33 cm)";
-            } else if (currentScale < 1) {
-                document.getElementById('yield').textContent = Math.round(8 * currentScale) + "-" + Math.round(10 * currentScale) + " pieces";
-                document.getElementById('panSize').textContent = "8x8 inch (20x20 cm)";
-                document.getElementById('equipmentPan').textContent = "(8x8 inch / 20x20 cm)";
-                document.getElementById('pan-step').textContent = "8x8 inch (20x20 cm)";
-            } else if (currentScale > 2) {
-                document.getElementById('yield').textContent = Math.round(8 * currentScale) + "-" + Math.round(10 * currentScale) + " pieces";
-                document.getElementById('panSize').textContent = "Multiple pans or extra large sheet pan";
-                document.getElementById('equipmentPan').textContent = "(Multiple pans needed)";
-                document.getElementById('pan-step').textContent = "appropriately sized";
-            } else {
-                document.getElementById('yield').textContent = Math.round(8 * currentScale) + "-" + Math.round(10 * currentScale) + " pieces";
-                document.getElementById('panSize').textContent = "9x13 inch (23x33 cm)";
-                document.getElementById('equipmentPan').textContent = "(9x13 inch / 23x33 cm)";
-                document.getElementById('pan-step').textContent = "9x13 inch (23x33 cm)";
-            }
+            // Update sourdough variation section
+            const sourdoughAmounts = calculateSourdoughAmounts();
+            safeUpdate('yeast-remove', Math.round(baseAmounts.yeast * currentScale) + 'g');
+            safeUpdate('starter-amount', sourdoughAmounts.starter + 'g');
+            safeUpdate('flour-sourdough', sourdoughAmounts.flour + 'g');
+            safeUpdate('water-sourdough', waterAmount + 'g');
             
-            document.getElementById('scaleDisplay').textContent = `Scale: ${currentScale}x`;
-            updateHydrationDisplay();
+            // Update sourdough steps
+            safeUpdate('water-sourdough-step', waterAmount + 'g');
+            safeUpdate('oil-sourdough-step', Math.round(baseAmounts.oilStep1 * currentScale) + 'g');
+            safeUpdate('sweetener-sourdough-step', Math.round(baseAmounts.sweetener * currentScale) + 'g');
+            safeUpdate('salt-sourdough-step', Math.round(baseAmounts.salt * currentScale) + 'g');
+            safeUpdate('starter-sourdough-step', sourdoughAmounts.starter + 'g');
+            safeUpdate('flour-sourdough-step', sourdoughAmounts.flour + 'g');
         }
         
         function updateButtons() {
