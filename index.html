@@ -466,6 +466,21 @@
                         </div>
                     </div>
                 </div>
+                
+                <div class="fermentation-controls" style="margin-top: 25px; padding-top: 20px; border-top: 2px solid #e9ecef;">
+                    <h4 style="margin-bottom: 15px; color: #495057;">Cold Fermentation Time</h4>
+                    <div class="slider-container">
+                        <input type="range" min="12" max="72" value="16" step="4" class="slider" id="fermentationSlider" oninput="setFermentationTime(this.value)">
+                        <div class="scale-display" id="fermentationDisplay">Fermentation: 16 hours (Standard)</div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.9em; color: #6c757d; margin-top: 5px;">
+                            <span>12h (Quick)</span>
+                            <span>72h (Extended)</span>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 0.85em; color: #6c757d; text-align: center;">
+                            <span id="yeastAdjustment">Yeast will be adjusted automatically</span>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="section">
@@ -729,6 +744,7 @@
         let currentScale = 1;
         let currentHydration = 81; // Default to middle of range (78-84%)
         let yeastType = 'commercial'; // 'commercial' or 'sourdough'
+        let currentFermentationHours = 16; // Default fermentation time
         
         const baseAmounts = {
             flour: 500,
@@ -745,6 +761,7 @@
             yeastType = type;
             updateYeastButtons();
             updateRecipe();
+            updateFermentationDisplay();
         }
         
         function updateYeastButtons() {
@@ -794,6 +811,29 @@
             updateHydrationDisplay();
         }
         
+        function setFermentationTime(hours) {
+            currentFermentationHours = parseInt(hours);
+            updateRecipe();
+            updateFermentationDisplay();
+        }
+        
+        function calculateYeastAmount() {
+            // Base yeast amount for 16-hour fermentation is 4g (0.8%)
+            // Use exponential decay formula: yeast = base * (0.5)^((time-16)/16)
+            // This roughly halves yeast for each 16-hour increase
+            const baseYeast = 4;
+            const exponent = (currentFermentationHours - 16) / 16;
+            return baseYeast * Math.pow(0.5, exponent);
+        }
+        
+        function calculateStarterAmount() {
+            // Base starter amount for 20-hour fermentation is 70g (14%)
+            // Adjust based on fermentation time
+            const baseStarter = 70;
+            const exponent = (currentFermentationHours - 20) / 20;
+            return baseStarter * Math.pow(0.6, exponent); // Slower reduction for starter
+        }
+        
         function updateHydrationDisplay() {
             let texture = "";
             if (currentHydration <= 79) {
@@ -806,6 +846,38 @@
             const hydrationDisplay = document.getElementById('hydrationDisplay');
             if (hydrationDisplay) {
                 hydrationDisplay.textContent = `Hydration: ${currentHydration}%${texture}`;
+            }
+        }
+        
+        function updateFermentationDisplay() {
+            let description = "";
+            if (currentFermentationHours <= 16) {
+                description = " (Quick)";
+            } else if (currentFermentationHours <= 24) {
+                description = " (Standard)";
+            } else if (currentFermentationHours <= 48) {
+                description = " (Extended)";
+            } else {
+                description = " (Very Extended)";
+            }
+            
+            const fermentationDisplay = document.getElementById('fermentationDisplay');
+            if (fermentationDisplay) {
+                fermentationDisplay.textContent = `Fermentation: ${currentFermentationHours} hours${description}`;
+            }
+            
+            // Update yeast adjustment note
+            const yeastAdjustment = document.getElementById('yeastAdjustment');
+            if (yeastAdjustment) {
+                if (yeastType === 'commercial') {
+                    const yeastAmount = calculateYeastAmount() * currentScale;
+                    const yeastPercent = (yeastAmount / (baseAmounts.flour * currentScale)) * 100;
+                    yeastAdjustment.textContent = `Yeast adjusted to ${yeastAmount.toFixed(1)}g (${yeastPercent.toFixed(2)}%)`;
+                } else {
+                    const starterAmount = calculateStarterAmount() * currentScale;
+                    const starterPercent = (starterAmount / (baseAmounts.flour * currentScale)) * 100;
+                    yeastAdjustment.textContent = `Starter adjusted to ${Math.round(starterAmount)}g (${starterPercent.toFixed(0)}%)`;
+                }
             }
         }
         
@@ -831,7 +903,7 @@
         }
         
         function calculateSourdoughAmounts() {
-            const starterAmount = Math.round(baseAmounts.starter * currentScale);
+            const starterAmount = Math.round(calculateStarterAmount() * currentScale);
             const flourReduction = Math.round(starterAmount / 2);
             const adjustedFlour = Math.round(baseAmounts.flour * currentScale) - flourReduction;
             
@@ -859,29 +931,28 @@
                 }
             }
             
-            // Update timing based on yeast type
-            if (yeastType === 'commercial') {
-                safeUpdate('total-time', '15-18 hours');
-                safeUpdate('fermentation-time', '12-16 hours');
-                safeUpdate('final-rise-time', '2 hours');
-            } else {
-                safeUpdate('total-time', '20-26 hours');
-                safeUpdate('fermentation-time', '18-24 hours');
-                safeUpdate('final-rise-time', '3-4 hours');
-            }
+            // Update timing based on yeast type and fermentation time
+            const totalTime = currentFermentationHours + (yeastType === 'commercial' ? 3 : 4);
+            const totalTimeRange = `${totalTime - 1}-${totalTime + 1} hours`;
+            safeUpdate('total-time', totalTimeRange);
+            safeUpdate('fermentation-time', `${currentFermentationHours} hours`);
+            safeUpdate('final-rise-time', yeastType === 'commercial' ? '2-3 hours' : '3-4 hours');
             
             // Update ingredients table
             if (yeastType === 'commercial') {
+                const yeastAmount = calculateYeastAmount() * currentScale;
+                const yeastPercent = (yeastAmount / (baseAmounts.flour * currentScale)) * 100;
                 safeUpdate('flour', Math.round(baseAmounts.flour * currentScale) + 'g');
                 safeUpdate('leavening-name', 'Instant Yeast');
-                safeUpdate('leavening-amount', Math.round(baseAmounts.yeast * currentScale) + 'g');
-                safeUpdate('leavening-percent', '0.8%');
+                safeUpdate('leavening-amount', yeastAmount.toFixed(1) + 'g');
+                safeUpdate('leavening-percent', yeastPercent.toFixed(2) + '%');
             } else {
                 const sourdoughAmounts = calculateSourdoughAmounts();
+                const starterPercent = (sourdoughAmounts.starter / (baseAmounts.flour * currentScale)) * 100;
                 safeUpdate('flour', sourdoughAmounts.flour + 'g');
                 safeUpdate('leavening-name', 'Sourdough Starter');
                 safeUpdate('leavening-amount', sourdoughAmounts.starter + 'g');
-                safeUpdate('leavening-percent', '14%');
+                safeUpdate('leavening-percent', starterPercent.toFixed(0) + '%');
             }
             
             safeUpdate('water', waterAmount + 'g');
@@ -899,7 +970,8 @@
             
             // Update Step 1 based on yeast type
             if (yeastType === 'commercial') {
-                safeUpdate('yeast-step', Math.round(baseAmounts.yeast * currentScale) + 'g');
+                const yeastAmount = calculateYeastAmount() * currentScale;
+                safeUpdate('yeast-step', yeastAmount.toFixed(1) + 'g');
                 safeUpdate('flour-step', Math.round(baseAmounts.flour * currentScale) + 'g');
             } else {
                 const sourdoughAmounts = calculateSourdoughAmounts();
@@ -951,7 +1023,8 @@
             
             // Update sourdough variation section
             const sourdoughAmounts = calculateSourdoughAmounts();
-            safeUpdate('yeast-remove', Math.round(baseAmounts.yeast * currentScale) + 'g');
+            const yeastAmount = calculateYeastAmount() * currentScale;
+            safeUpdate('yeast-remove', yeastAmount.toFixed(1) + 'g');
             safeUpdate('starter-amount', sourdoughAmounts.starter + 'g');
             safeUpdate('flour-sourdough', sourdoughAmounts.flour + 'g');
             safeUpdate('water-sourdough', waterAmount + 'g');
@@ -990,6 +1063,7 @@
             try {
                 updateYeastButtons();
                 updateRecipe();
+                updateFermentationDisplay();
             } catch (error) {
                 console.error('Initialization error:', error);
                 // Retry after a short delay
