@@ -546,7 +546,7 @@
                 </table>
             </div>
             
-            <div class="section">
+            <div class="section" id="sourdough-section" style="display: none;">
                 <h2>🥖 Sourdough Variation</h2>
                 <div style="background: #e8f5e8; border: 2px solid #4caf50; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
                     <h4 style="color: #2e7d32; margin-bottom: 15px;">Substitute Commercial Yeast with Sourdough Starter</h4>
@@ -768,6 +768,7 @@
             const commercialBtn = document.getElementById('commercial-yeast-btn');
             const sourdoughBtn = document.getElementById('sourdough-btn');
             const description = document.getElementById('method-description');
+            const sourdoughSection = document.getElementById('sourdough-section');
             
             if (commercialBtn && sourdoughBtn && description) {
                 if (yeastType === 'commercial') {
@@ -777,6 +778,7 @@
                     sourdoughBtn.style.color = '#4caf50';
                     description.innerHTML = '<strong>Commercial Yeast:</strong> Quick and reliable • 12-16 hours total time • Consistent results';
                     description.style.background = 'rgba(102, 126, 234, 0.1)';
+                    if (sourdoughSection) sourdoughSection.style.display = 'none';
                 } else {
                     commercialBtn.style.background = 'white';
                     commercialBtn.style.color = '#667eea';
@@ -784,6 +786,7 @@
                     sourdoughBtn.style.color = 'white';
                     description.innerHTML = '<strong>Sourdough Starter:</strong> Complex flavor • 18-24 hours total time • Artisan texture • Better keeping qualities';
                     description.style.background = 'rgba(76, 175, 80, 0.1)';
+                    if (sourdoughSection) sourdoughSection.style.display = 'block';
                 }
             }
         }
