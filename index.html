@@ -481,6 +481,15 @@
                         </div>
                     </div>
                 </div>
+                
+                <div class="save-share-controls" style="margin-top: 25px; padding-top: 20px; border-top: 2px solid #e9ecef; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                    <button id="save-button" onclick="saveToLocalStorage()" style="padding: 10px 20px; border: 2px solid #667eea; background: #667eea; color: white; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; font-size: 1em;">
+                        💾 Save Settings
+                    </button>
+                    <button id="share-button" onclick="copyShareURL()" style="padding: 10px 20px; border: 2px solid #667eea; background: #667eea; color: white; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; font-size: 1em;">
+                        🔗 Share Recipe
+                    </button>
+                </div>
             </div>
             
             <div class="section">
@@ -1074,10 +1083,152 @@
             }
         }
         
+        // Generate shareable URL with current settings
+        function getShareableURL() {
+            const params = new URLSearchParams({
+                scale: currentScale,
+                hydration: currentHydration,
+                fermentation: currentFermentationHours,
+                yeast: yeastType
+            });
+            return `${window.location.origin}${window.location.pathname}?${params}`;
+        }
+        
+        // Copy URL to clipboard
+        function copyShareURL() {
+            const url = getShareableURL();
+            navigator.clipboard.writeText(url).then(() => {
+                const button = document.getElementById('share-button');
+                const originalText = button.textContent;
+                button.textContent = '✓ Copied!';
+                button.style.background = '#28a745';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#667eea';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy URL. Please copy manually: ' + url);
+            });
+        }
+        
+        // Load settings from URL on page load
+        function loadFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            let hasParams = false;
+            
+            if (params.has('scale')) {
+                const scale = parseFloat(params.get('scale'));
+                if (scale >= 0.25 && scale <= 4) {
+                    currentScale = scale;
+                    hasParams = true;
+                }
+            }
+            
+            if (params.has('hydration')) {
+                const hydration = parseInt(params.get('hydration'));
+                if (hydration >= 78 && hydration <= 84) {
+                    currentHydration = hydration;
+                    hasParams = true;
+                }
+            }
+            
+            if (params.has('fermentation')) {
+                const fermentation = parseInt(params.get('fermentation'));
+                if (fermentation >= 12 && fermentation <= 72) {
+                    currentFermentationHours = fermentation;
+                    hasParams = true;
+                }
+            }
+            
+            if (params.has('yeast')) {
+                const yeast = params.get('yeast');
+                if (yeast === 'commercial' || yeast === 'sourdough') {
+                    yeastType = yeast;
+                    hasParams = true;
+                }
+            }
+            
+            // Update sliders to match loaded values
+            if (hasParams) {
+                const scaleSlider = document.getElementById('scaleSlider');
+                const hydrationSlider = document.getElementById('hydrationSlider');
+                const fermentationSlider = document.getElementById('fermentationSlider');
+                
+                if (scaleSlider) scaleSlider.value = currentScale;
+                if (hydrationSlider) hydrationSlider.value = currentHydration;
+                if (fermentationSlider) fermentationSlider.value = currentFermentationHours;
+            }
+            
+            return hasParams;
+        }
+        
+        // Save current settings to localStorage
+        function saveToLocalStorage() {
+            const settings = {
+                scale: currentScale,
+                hydration: currentHydration,
+                fermentation: currentFermentationHours,
+                yeast: yeastType,
+                savedDate: new Date().toISOString()
+            };
+            localStorage.setItem('focacciaSettings', JSON.stringify(settings));
+            
+            // Show save confirmation
+            const button = document.getElementById('save-button');
+            const originalText = button.textContent;
+            button.textContent = '✓ Saved!';
+            button.style.background = '#28a745';
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '#667eea';
+            }, 2000);
+        }
+        
+        // Load settings from localStorage
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('focacciaSettings');
+            if (saved) {
+                try {
+                    const settings = JSON.parse(saved);
+                    currentScale = settings.scale || 1;
+                    currentHydration = settings.hydration || 81;
+                    currentFermentationHours = settings.fermentation || 16;
+                    yeastType = settings.yeast || 'commercial';
+                    
+                    // Update sliders
+                    const scaleSlider = document.getElementById('scaleSlider');
+                    const hydrationSlider = document.getElementById('hydrationSlider');
+                    const fermentationSlider = document.getElementById('fermentationSlider');
+                    
+                    if (scaleSlider) scaleSlider.value = currentScale;
+                    if (hydrationSlider) hydrationSlider.value = currentHydration;
+                    if (fermentationSlider) fermentationSlider.value = currentFermentationHours;
+                    
+                    return true;
+                } catch (e) {
+                    console.error('Failed to load saved settings:', e);
+                    return false;
+                }
+            }
+            return false;
+        }
+        
         // Initialize when DOM is ready
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeRecipe);
+            document.addEventListener('DOMContentLoaded', () => {
+                // Try to load from URL first, then localStorage, then use defaults
+                const loadedFromURL = loadFromURL();
+                if (!loadedFromURL) {
+                    loadFromLocalStorage();
+                }
+                initializeRecipe();
+            });
         } else {
+            const loadedFromURL = loadFromURL();
+            if (!loadedFromURL) {
+                loadFromLocalStorage();
+            }
             initializeRecipe();
         }
     </script>
